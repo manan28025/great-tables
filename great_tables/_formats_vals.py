@@ -4,7 +4,7 @@ from collections.abc import Callable
 from contextvars import ContextVar
 from functools import partial, wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Concatenate, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, Concatenate, Literal, TypeAlias, overload
 
 from typing_extensions import ParamSpec
 
@@ -12,6 +12,7 @@ from typing_extensions import ParamSpec
 # as part of broader work to remove the pandas dependency from val functions.
 from ._formats import (
     _get_locale_min_sep_threshold,
+    _numbering_system_marks,
     _get_locale_sep_mark,
     _resolve_locale,
     fmt_integer_context,
@@ -124,6 +125,7 @@ def val_fmt_number(
     dec_mark: str = ".",
     force_sign: bool = False,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     locale: str | None = None,
 ) -> list[str]:
     """
@@ -204,6 +206,11 @@ def val_fmt_number(
         (e.g., `1,000`), `2` starts at 5-digit numbers (`10,000`), and `3` starts at 6-digit
         numbers (`100,000`). When a `locale=` value is provided, the locale's own minimum grouping
         digits value is used instead (it's `2` for locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     locale
         An optional locale identifier that can be used for formatting values according the locale's
         rules. Examples include `"en"` for English (United States) and `"fr"` for French (France).
@@ -241,6 +248,7 @@ def val_fmt_number(
         force_sign=force_sign,
         locale=locale,
         min_sep_threshold=min_sep_threshold,
+        system=system,
     )
 
     vals_fmt = _get_column_of_values(gt=gt_obj_fmt, column_name="x", context=_VALS_CONTEXT.get())
@@ -259,6 +267,7 @@ def val_fmt_integer(
     sep_mark: str = ",",
     force_sign: bool = False,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     locale: str | None = None,
 ) -> list[str]:
     """
@@ -315,6 +324,11 @@ def val_fmt_integer(
         (e.g., `1,000`), `2` starts at 5-digit numbers (`10,000`), and `3` starts at 6-digit
         numbers (`100,000`). When a `locale=` value is provided, the locale's own minimum grouping
         digits value is used instead (it's `2` for locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     locale
         An optional locale identifier that can be used for formatting values according the locale's
         rules. Examples include `"en"` for English (United States) and `"fr"` for French (France).
@@ -342,6 +356,9 @@ def val_fmt_integer(
     # Use locale-based marks if a locale ID is provided
     sep_mark = _get_locale_sep_mark(default=sep_mark, use_seps=use_seps, locale=locale)
     min_sep_threshold = _get_locale_min_sep_threshold(default=min_sep_threshold, locale=locale)
+    sep_mark, _ = _numbering_system_marks(
+        system, use_seps=use_seps, sep_mark=sep_mark, dec_mark="."
+    )
 
     # data: GTData is used for ._tbl_data, so we just need to wrap Agnostic
     pf = partial(
@@ -354,6 +371,7 @@ def val_fmt_integer(
         pattern=pattern,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         force_sign=force_sign,
         context=_VALS_CONTEXT.get(),
     )
@@ -771,6 +789,7 @@ def val_fmt_percent(
     accounting: bool = False,
     use_seps: bool = True,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     pattern: str = "{x}",
     sep_mark: str = ",",
     dec_mark: str = ".",
@@ -834,6 +853,11 @@ def val_fmt_percent(
         (e.g., `1,000`), `2` starts at 5-digit numbers (`10,000`), and `3` starts at 6-digit
         numbers (`100,000`). When a `locale=` value is provided, the locale's own minimum grouping
         digits value is used instead (it's `2` for locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     pattern
         A formatting pattern that allows for decoration of the formatted value. The formatted value
         is represented by the `{x}` (which can be used multiple times, if needed) and all other
@@ -893,6 +917,7 @@ def val_fmt_percent(
         incl_space=incl_space,
         locale=locale,
         min_sep_threshold=min_sep_threshold,
+        system=system,
     )
 
     vals_fmt = _get_column_of_values(gt=gt_obj_fmt, column_name="x", context=_VALS_CONTEXT.get())
@@ -1043,6 +1068,7 @@ def val_fmt_currency(
     accounting: bool = False,
     use_seps: bool = True,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     scale_by: float = 1,
     compact: bool = False,
     pattern: str = "{x}",
@@ -1107,6 +1133,11 @@ def val_fmt_currency(
         (e.g., `1,000`), `2` starts at 5-digit numbers (`10,000`), and `3` starts at 6-digit
         numbers (`100,000`). When a `locale=` value is provided, the locale's own minimum grouping
         digits value is used instead (it's `2` for locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     scale_by
         All numeric values will be multiplied by the `scale_by` value before undergoing formatting.
         Since the `default` value is `1`, no values will be changed unless a different multiplier
@@ -1176,6 +1207,7 @@ def val_fmt_currency(
         incl_space=incl_space,
         locale=locale,
         min_sep_threshold=min_sep_threshold,
+        system=system,
     )
 
     vals_fmt = _get_column_of_values(gt=gt_obj_fmt, column_name="x", context=_VALS_CONTEXT.get())

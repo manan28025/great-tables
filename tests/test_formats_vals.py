@@ -216,3 +216,11 @@ def test_val_fmt_min_sep_threshold():
 def test_val_fmt_min_sep_threshold_from_locale():
     assert vals.fmt_number([1836, 10000], decimals=0, locale="et") == ["1836", "10 000"]
     assert vals.fmt_integer([1836, 10000], locale="pl") == ["1836", "10 000"]
+
+
+def test_val_fmt_system_ind():
+    assert vals.fmt_number([12345678.9], system="ind") == ["1,23,45,678.90"]
+    assert vals.fmt_integer([12345678], system="ind") == ["1,23,45,678"]
+    assert vals.fmt_integer([12345678], system="ind", use_seps=False) == ["12345678"]
+    assert vals.fmt_percent([1234.5678], system="ind") == ["1,23,456.78%"]
+    assert vals.fmt_currency([12345.678], currency="INR", system="ind") == ["&#8377;12,345.68"]

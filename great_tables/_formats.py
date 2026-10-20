@@ -187,6 +187,7 @@ def fmt_number(
     dec_mark: str = ".",
     force_sign: bool = False,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     locale: str | None = None,
 ) -> GTSelf:
     """
@@ -274,6 +275,11 @@ def fmt_number(
         numbers (`100,000`). When a locale is in effect (through `locale=` or a locale set in
         `GT()`), the locale's own minimum grouping digits value is used instead (it's `2` for
         locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     locale
         An optional locale identifier that can be used for formatting values according the locale's
         rules. Examples include `"en"` for English (United States) and `"fr"` for French (France).
@@ -319,6 +325,9 @@ def fmt_number(
     sep_mark = _get_locale_sep_mark(default=sep_mark, use_seps=use_seps, locale=locale)
     min_sep_threshold = _get_locale_min_sep_threshold(default=min_sep_threshold, locale=locale)
     dec_mark = _get_locale_dec_mark(default=dec_mark, locale=locale)
+    sep_mark, dec_mark = _numbering_system_marks(
+        system, use_seps=use_seps, sep_mark=sep_mark, dec_mark=dec_mark
+    )
 
     pf_format = partial(
         fmt_number_context,
@@ -333,6 +342,7 @@ def fmt_number(
         compact=compact,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         dec_mark=dec_mark,
         force_sign=force_sign,
         pattern=pattern,
@@ -354,6 +364,7 @@ def fmt_number_context(
     compact: bool,
     sep_mark: str,
     min_sep_threshold: int,
+    system: str,
     dec_mark: str,
     force_sign: bool,
     pattern: str,
@@ -378,6 +389,7 @@ def fmt_number_context(
             use_seps=use_seps,
             sep_mark=sep_mark,
             min_sep_threshold=min_sep_threshold,
+            system=system,
             dec_mark=dec_mark,
             force_sign=force_sign,
         )
@@ -391,6 +403,7 @@ def fmt_number_context(
             use_seps=use_seps,
             sep_mark=sep_mark,
             min_sep_threshold=min_sep_threshold,
+            system=system,
             dec_mark=dec_mark,
             force_sign=force_sign,
         )
@@ -426,6 +439,7 @@ def fmt_integer(
     sep_mark: str = ",",
     force_sign: bool = False,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     locale: str | None = None,
 ) -> GTSelf:
     """
@@ -489,6 +503,11 @@ def fmt_integer(
         numbers (`100,000`). When a locale is in effect (through `locale=` or a locale set in
         `GT()`), the locale's own minimum grouping digits value is used instead (it's `2` for
         locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     locale
         An optional locale identifier that can be used for formatting values according the locale's
         rules. Examples include `"en"` for English (United States) and `"fr"` for French (France).
@@ -532,6 +551,9 @@ def fmt_integer(
     # Use locale-based marks if a locale ID is provided
     sep_mark = _get_locale_sep_mark(default=sep_mark, use_seps=use_seps, locale=locale)
     min_sep_threshold = _get_locale_min_sep_threshold(default=min_sep_threshold, locale=locale)
+    sep_mark, _ = _numbering_system_marks(
+        system, use_seps=use_seps, sep_mark=sep_mark, dec_mark="."
+    )
 
     pf_format = partial(
         fmt_integer_context,
@@ -542,6 +564,7 @@ def fmt_integer(
         compact=compact,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         force_sign=force_sign,
         pattern=pattern,
     )
@@ -558,6 +581,7 @@ def fmt_integer_context(
     compact: bool,
     sep_mark: str,
     min_sep_threshold: int,
+    system: str,
     force_sign: bool,
     pattern: str,
     context: str,
@@ -581,6 +605,7 @@ def fmt_integer_context(
             use_seps=use_seps,
             sep_mark=sep_mark,
             min_sep_threshold=min_sep_threshold,
+            system=system,
             dec_mark="not used",
             force_sign=force_sign,
         )
@@ -595,6 +620,7 @@ def fmt_integer_context(
             use_seps=use_seps,
             sep_mark=sep_mark,
             min_sep_threshold=min_sep_threshold,
+            system=system,
             dec_mark="not used",
             force_sign=force_sign,
         )
@@ -1667,6 +1693,7 @@ def fmt_percent(
     scale_values: bool = True,
     use_seps: bool = True,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     accounting: bool = False,
     pattern: str = "{x}",
     sep_mark: str = ",",
@@ -1735,6 +1762,11 @@ def fmt_percent(
         numbers (`100,000`). When a locale is in effect (through `locale=` or a locale set in
         `GT()`), the locale's own minimum grouping digits value is used instead (it's `2` for
         locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     accounting
         Whether to use accounting style, which wraps negative numbers in parentheses instead of
         using a minus sign.
@@ -1808,6 +1840,9 @@ def fmt_percent(
     sep_mark = _get_locale_sep_mark(default=sep_mark, use_seps=use_seps, locale=locale)
     min_sep_threshold = _get_locale_min_sep_threshold(default=min_sep_threshold, locale=locale)
     dec_mark = _get_locale_dec_mark(default=dec_mark, locale=locale)
+    sep_mark, dec_mark = _numbering_system_marks(
+        system, use_seps=use_seps, sep_mark=sep_mark, dec_mark=dec_mark
+    )
 
     if scale_values:
         scale_by = 100
@@ -1825,6 +1860,7 @@ def fmt_percent(
         scale_by=scale_by,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         dec_mark=dec_mark,
         force_sign=force_sign,
         placement=placement,
@@ -1846,6 +1882,7 @@ def fmt_percent_context(
     scale_by: float,
     sep_mark: str,
     min_sep_threshold: int,
+    system: str,
     dec_mark: str,
     force_sign: bool,
     placement: str,
@@ -1872,6 +1909,7 @@ def fmt_percent_context(
         use_seps=use_seps,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         dec_mark=dec_mark,
         force_sign=force_sign,
     )
@@ -2238,6 +2276,7 @@ def fmt_currency(
     drop_trailing_dec_mark: bool = True,
     use_seps: bool = True,
     min_sep_threshold: int = 1,
+    system: Literal["intl", "ind"] = "intl",
     accounting: bool = False,
     scale_by: float = 1,
     compact: bool = False,
@@ -2310,6 +2349,11 @@ def fmt_currency(
         numbers (`100,000`). When a locale is in effect (through `locale=` or a locale set in
         `GT()`), the locale's own minimum grouping digits value is used instead (it's `2` for
         locales like `"es"` and `"pl"`).
+    system
+        The numbering system to use. By default, this is the international numbering system
+        (`"intl"`), where digits are grouped by threes. With the Indian numbering system (`"ind"`),
+        the last three digits of the integer part are grouped together and the rest are grouped by
+        twos (e.g., `12,34,56,789`), always with `","` and `"."` as the separator and decimal marks.
     accounting
         Whether to use accounting style, which wraps negative numbers in parentheses instead of
         using a minus sign.
@@ -2393,6 +2437,9 @@ def fmt_currency(
     sep_mark = _get_locale_sep_mark(default=sep_mark, use_seps=use_seps, locale=locale)
     min_sep_threshold = _get_locale_min_sep_threshold(default=min_sep_threshold, locale=locale)
     dec_mark = _get_locale_dec_mark(default=dec_mark, locale=locale)
+    sep_mark, dec_mark = _numbering_system_marks(
+        system, use_seps=use_seps, sep_mark=sep_mark, dec_mark=dec_mark
+    )
 
     # Resolve the currency either from direct input in `currency` or through a locale
     if currency is None:
@@ -2422,6 +2469,7 @@ def fmt_currency(
         compact=compact,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         dec_mark=dec_mark,
         force_sign=force_sign,
         placement=placement,
@@ -2444,6 +2492,7 @@ def fmt_currency_context(
     compact: bool,
     sep_mark: str,
     min_sep_threshold: int,
+    system: str,
     dec_mark: str,
     force_sign: bool,
     placement: str,
@@ -2487,6 +2536,7 @@ def fmt_currency_context(
         use_seps=use_seps,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         dec_mark=dec_mark,
         force_sign=force_sign,
     )
@@ -6262,6 +6312,7 @@ def _value_to_decimal_notation(
     dec_mark: str = ".",
     force_sign: bool = False,
     min_sep_threshold: int = 1,
+    system: str = "intl",
 ) -> str:
     """
     Decimal notation.
@@ -6285,6 +6336,7 @@ def _value_to_decimal_notation(
             dec_mark=dec_mark,
             preserve_integer=False,
             min_sep_threshold=min_sep_threshold,
+            system=system,
         )
 
     else:
@@ -6299,6 +6351,7 @@ def _value_to_decimal_notation(
             sep_mark=sep_mark,
             dec_mark=dec_mark,
             min_sep_threshold=min_sep_threshold,
+            system=system,
         )
 
     # Drop the trailing decimal mark if it is present
@@ -6361,6 +6414,7 @@ def _format_number_n_sigfig(
     dec_mark: str = ".",
     preserve_integer: bool = False,
     min_sep_threshold: int = 1,
+    system: str = "intl",
 ) -> str:
     sig_digits, power, is_negative = _get_number_profile(value, n_sigfig)
 
@@ -6384,12 +6438,7 @@ def _format_number_n_sigfig(
     # Insert grouping separators within the integer part, but only when it has enough digits
     # for the `min_sep_threshold` (the default of `1` starts grouping at four digits)
     if use_seps and len(integer_part) >= min_sep_threshold + 3:
-        count = 0
-        for digit in reversed(integer_part):
-            if count and count % 3 == 0:
-                formatted_integer = sep_mark + formatted_integer
-            formatted_integer = digit + formatted_integer
-            count += 1
+        formatted_integer = _insert_group_separators(integer_part, sep_mark=sep_mark, system=system)
     else:
         formatted_integer = integer_part
 
@@ -6403,6 +6452,40 @@ def _format_number_n_sigfig(
     return result
 
 
+def _insert_group_separators(integer_part: str, sep_mark: str, system: str = "intl") -> str:
+    """
+    Insert grouping separators in the digits of an integer part. The international numbering
+    system groups digits by threes (`123,456,789`); the Indian numbering system groups the last
+    three digits together and the rest by twos (`12,34,56,789`).
+    """
+
+    head, tail = integer_part[:-3], integer_part[-3:]
+    size = 2 if system == "ind" else 3
+    groups = [tail]
+    while head:
+        groups.insert(0, head[-size:])
+        head = head[:-size]
+
+    return sep_mark.join(groups)
+
+
+def _numbering_system_marks(
+    system: str, use_seps: bool, sep_mark: str, dec_mark: str
+) -> tuple[str, str]:
+    """
+    Validate `system=` and return the separator and decimal marks to use with it. As in gt, the
+    Indian numbering system always uses `","` and `"."` (no separator if `use_seps=False`).
+    """
+
+    if system not in ("intl", "ind"):
+        raise ValueError(f'The `system=` value must be either "intl" or "ind", not {system!r}.')
+
+    if system == "ind":
+        return ("," if use_seps else "", ".")
+
+    return (sep_mark, dec_mark)
+
+
 def _format_number_fixed_decimals(
     value: float,
     decimals: int,
@@ -6411,6 +6494,7 @@ def _format_number_fixed_decimals(
     sep_mark: str = ",",
     dec_mark: str = ".",
     min_sep_threshold: int = 1,
+    system: str = "intl",
 ) -> str:
     # If `number` is a string, cast it into a float
     if isinstance(value, str):
@@ -6458,12 +6542,7 @@ def _format_number_fixed_decimals(
     # Insert grouping separators within the integer part, but only when it has enough digits
     # for the `min_sep_threshold` (the default of `1` starts grouping at four digits)
     if use_seps and len(integer_part) >= min_sep_threshold + 3:
-        count = 0
-        for digit in reversed(integer_part):
-            if count and count % 3 == 0:
-                formatted_integer = sep_mark + formatted_integer
-            formatted_integer = digit + formatted_integer
-            count += 1
+        formatted_integer = _insert_group_separators(integer_part, sep_mark=sep_mark, system=system)
     else:
         formatted_integer = integer_part
 
@@ -6512,6 +6591,7 @@ def _format_number_compactly(
     dec_mark: str,
     force_sign: bool,
     min_sep_threshold: int = 1,
+    system: str = "intl",
 ) -> str:
     # If the value is exactly zero, then we can return `0` immediately
     if value == 0:
@@ -6557,6 +6637,7 @@ def _format_number_compactly(
         use_seps=use_seps,
         sep_mark=sep_mark,
         min_sep_threshold=min_sep_threshold,
+        system=system,
         dec_mark=dec_mark,
         force_sign=force_sign,
     )

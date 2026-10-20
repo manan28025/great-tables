@@ -26,6 +26,7 @@ from great_tables._formats import (
     _get_locale_dec_mark,
     _get_locale_sep_mark,
     _get_next_si_prefix,
+    _insert_group_separators,
     _has_zero_value,
     _normalize_locale,
     _decimal_exponent,
@@ -5743,3 +5744,119 @@ def test_fmt_nanoplot_accessible_name():
         "Sales",
         "Line plot of 3 values from 1.00 to 3.00, ending at 3.00",
     ]
+
+
+# ==============================================================================
+# Indian numbering system tests (the expected values are those of the gt tests)
+# ==============================================================================
+
+IND_VALUES = [
+    5000000.01,
+    1000.001,
+    10.00001,
+    12345,
+    1234.5,
+    123.45,
+    1.2345,
+    0.12345,
+    2583063.2345,
+    1535674223.33,
+    6425648257336228,
+    -500000000.000,
+    -1000.001,
+    -10.00001,
+    -12345,
+    -0.0000123456,
+    0,
+]
+
+
+def test_fmt_number_system_ind():
+    df = pd.DataFrame({"x": IND_VALUES})
+    gt = GT(df).fmt_number(columns="x", system="ind")
+
+    assert _get_column_of_values(gt, column_name="x", context="html") == [
+        "50,00,000.01",
+        "1,000.00",
+        "10.00",
+        "12,345.00",
+        "1,234.50",
+        "123.45",
+        "1.23",
+        "0.12",
+        "25,83,063.23",
+        "1,53,56,74,223.33",
+        "6,42,56,48,25,73,36,228.00",
+        "−50,00,00,000.00",
+        "−1,000.00",
+        "−10.00",
+        "−12,345.00",
+        "0.00",
+        "0.00",
+    ]
+
+
+def test_fmt_number_system_ind_force_sign():
+    df = pd.DataFrame({"x": [5000000.01, 12345, -1000.001, 0]})
+    gt = GT(df).fmt_number(columns="x", force_sign=True, system="ind")
+
+    assert _get_column_of_values(gt, column_name="x", context="html") == [
+        "+50,00,000.01",
+        "+12,345.00",
+        "−1,000.00",
+        "0.00",
+    ]
+
+
+def test_fmt_number_system_ind_n_sigfig():
+    df = pd.DataFrame({"x": [5000000.01, 1000.001, 1.2345, 2583063.2345, 1535674223.33]})
+    gt = GT(df).fmt_number(columns="x", n_sigfig=4, system="ind")
+
+    assert _get_column_of_values(gt, column_name="x", context="html") == [
+        "50,00,000",
+        "1,000",
+        "1.234",
+        "25,83,000",
+        "1,53,60,00,000",
+    ]
+
+
+@pytest.mark.parametrize(
+    "fmt,kwargs,values,expected",
+    [
+        ("fmt_integer", {}, [1234567, -98765432], ["12,34,567", "−9,87,65,432"]),
+        ("fmt_percent", {}, [1234.5678], ["1,23,456.78%"]),
+        ("fmt_currency", {"currency": "INR"}, [12345.678], ["&#8377;12,345.68"]),
+        ("fmt_number", {"use_seps": False}, [12345678.9], ["12345678.90"]),
+        # the Indian numbering system always uses "," and "." as its marks
+        ("fmt_number", {"locale": "de"}, [12345678.9], ["1,23,45,678.90"]),
+    ],
+)
+def test_fmt_system_ind(fmt: str, kwargs: dict[str, Any], values: list, expected: list[str]):
+    df = pd.DataFrame({"x": values})
+    gt = getattr(GT(df), fmt)(columns="x", system="ind", **kwargs)
+
+    assert _get_column_of_values(gt, column_name="x", context="html") == expected
+
+
+@pytest.mark.parametrize(
+    "digits,intl,ind",
+    [
+        ("1", "1", "1"),
+        ("123", "123", "123"),
+        ("1234", "1,234", "1,234"),
+        ("12345", "12,345", "12,345"),
+        ("123456", "123,456", "1,23,456"),
+        ("1234567", "1,234,567", "12,34,567"),
+    ],
+)
+def test_insert_group_separators(digits: str, intl: str, ind: str):
+    assert _insert_group_separators(digits, sep_mark=",", system="intl") == intl
+    assert _insert_group_separators(digits, sep_mark=",", system="ind") == ind
+
+
+def test_fmt_number_system_invalid():
+    df = pd.DataFrame({"x": [1000]})
+
+    with pytest.raises(ValueError, match='must be either "intl" or "ind"'):
+        GT(df).fmt_number(columns="x", system="indian")  # type: ignore[arg-type]
